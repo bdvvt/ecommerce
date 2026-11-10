@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8087}
+
+spring:
+  application:
+    name: notification-service
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/notification_db}
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rikkeiacademy}
+      timeout: 2000ms
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:bdvviet@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:wnoc jtud djgz dwlu}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_GROUP_ID:notification-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:daylachuoimahoabimatrikkei0987654321dacbietracroi}
+  expired: ${JWT_EXPIRED:3600000}

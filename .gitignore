@@ -1,0 +1,22 @@
+# IDE / Editor files
+.idea/
+*.iml
+.vscode/
+
+# Build artifacts & Gradle caches
+.gradle/
+build/
+**/build/
+!**/src/**/build/
+
+# Environment files with sensitive credentials
+.env
+!.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

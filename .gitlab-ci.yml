@@ -1,0 +1,95 @@
+stages:
+  - build
+  - test
+  - deploy
+
+build-java:
+  stage: build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: never
+    - if: $CI_COMMIT_REF_PROTECTED == 'true'
+      when: always
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+  tags: [docker]
+  image:
+    name: amazoncorretto:21-alpine
+    entrypoint: [""]
+  variables:
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - chmod +x ./identity-service/gradlew ./notification-service/gradlew
+    - cd identity-service && ./gradlew bootJar -x test && cd ..
+    - cd notification-service && ./gradlew bootJar -x test && cd ..
+  artifacts:
+    when: on_success
+    paths:
+      - ./identity-service/build/libs/identity-service-0.0.1-SNAPSHOT.jar
+      - ./notification-service/build/libs/notification-service-0.0.1-SNAPSHOT.jar
+  cache:     
+    when: always
+    paths:
+      - $CI_PROJECT_DIR/.gradle
+
+build-docker-image:
+  stage: build
+  tags: [docker]
+  image:
+    name: docker:git
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: never
+    - if: $CI_COMMIT_REF_PROTECTED == 'true'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  needs:
+    - job: build-java
+      artifacts: true       
+  environment: $CI_COMMIT_REF_NAME
+  script:
+    - docker login $IMAGE_REGISTRY -u $IMAGE_REGISTRY_USERNAME -p $IMAGE_REGISTRY_PASSWORD
+    - docker buildx b . -t $IMAGE_REGISTRY/$IMAGE_PATH:$IMAGE_TAG --push
+
+trivy_scan:
+  stage: test
+  tags: [docker]
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  variables:
+    TRIVY_CACHE_DIR: "$CI_PROJECT_DIR/.trivycache"
+    GIT_STRATEGY: none
+    TRIVY_USERNAME: $IMAGE_REGISTRY_USERNAME
+    TRIVY_PASSWORD: $IMAGE_REGISTRY_PASSWORD
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: never
+    - if: $CI_COMMIT_REF_PROTECTED == 'true'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - trivy image --format template --template "@/contrib/html.tpl" -o trivy-report.html $IMAGE_REGISTRY/$IMAGE_PATH:$IMAGE_TAG
+  artifacts:
+    when: always
+    expose_as: "Trivy report"
+    paths:
+      - trivy-report.html
+  cache:
+    key: trivy-db
+    paths:
+      - .trivycache/
+
+deploy:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == 'true'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  needs:
+    - job: build-docker-image
+  tags: [shell]
+  environment: $CI_COMMIT_REF_NAME
+  script:
+    - ssh -o StrictHostKeyChecking=accept-new $SSH_DESTINATION docker compose $DOCKER_COMPOSE_ARGS pull
+    - ssh $SSH_DESTINATION CORS_ALLOWED_ORIGIN_PATTERNS=\"$CORS_ALLOWED_ORIGIN_PATTERNS\" docker compose $DOCKER_COMPOSE_ARGS up -d

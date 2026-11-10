@@ -1,0 +1,52 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: identity-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/identity_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:12345}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: true
+        format_sql: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    topics:
+      user-registered: ${KAFKA_TOPIC_USER_REGISTERED:user-registered-topic}
+    consumer:
+      group-id: ${KAFKA_GROUP_ID:ecommerce-identity-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:daylachuoimahoabimatrikkei0987654321dacbietracroi}
+  expired: ${JWT_EXPIRED:3600000}
+
+notification:
+  service:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:bz3humqu}
+  api-key: ${CLOUDINARY_API_KEY:622247945241233}
+  api-secret: ${CLOUDINARY_API_SECRET:pG8qmL1t0QbuLrQ7x4XvskZFq4g}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
